@@ -1,6 +1,8 @@
 # 📚 Sistema de Cadastro de Livros
 
-Projeto desenvolvido com **PHP 8.3**, **Laravel 12**, **Vite** e **Bootstrap**, com o objetivo de gerenciar o cadastro de **livros**, **autores** e **assuntos**.
+Sistema web desenvolvido para a gestão de livros, autores e assuntos, com foco em organização, usabilidade e separação clara de responsabilidades. O projeto utiliza PHP 8.3 e Laravel 12, adotando boas práticas de arquitetura, relacionamentos muitos-para-muitos e testes automatizados.
+
+A aplicação permite o cadastro completo de livros, associação com múltiplos autores e assuntos, além da geração de relatórios em PDF, oferecendo uma interface moderna e responsiva baseada em Bootstrap.
 
 ---
 
@@ -8,23 +10,42 @@ Projeto desenvolvido com **PHP 8.3**, **Laravel 12**, **Vite** e **Bootstrap**, 
 
 - **PHP 8.3**
 - **Laravel 12**
-- **Vite** (para assets frontend)
-- **Bootstrap 5**
 - **MySQL 8.0**
-
+- **Vite** (gerenciamento de assets frontend)
+- **Bootstrap 5**
+- **DataTables**
+- **Composer**
+- **Node.js / npm**
 ---
 
 ## 🚀 Funcionalidades
 
-- Cadastro de livros com:
-  - Título, Editora, Edição, Ano de Publicação, Valor (R$)
-  - Múltiplos Autores
-  - Múltiplos Assuntos
-- Gerenciamento de autores (CRUD completo)
-- Gerenciamento de assuntos (CRUD completo)
-- Interface amigável com Bootstrap 5
-- Relatórios em PDF agrupados por autor
-- DataTables para listagens com paginação e busca
+- **Cadastro de Livros**
+  - Título
+  - Editora
+  - Edição
+  - Ano de Publicação
+  - Valor (R$)
+  - Associação com múltiplos autores
+  - Associação com múltiplos assuntos
+
+- **Gerenciamento de Autores**
+  - Cadastro, edição, listagem e exclusão (CRUD completo)
+
+- **Gerenciamento de Assuntos**
+  - Cadastro, edição, listagem e exclusão (CRUD completo)
+
+- **Relatórios**
+  - Geração de relatórios em PDF agrupados por autor
+
+- **Interface Web**
+  - Layout responsivo
+  - Navegação intuitiva
+  - Integração com DataTables (paginação, ordenação e busca)
+
+- **Qualidade e Manutenibilidade**
+  - Camada de Services para centralização das regras de negócio
+  - Testes automatizados com PHPUnit
 
 ---
 
@@ -75,7 +96,9 @@ php artisan serve
 ---
 
 ## 🧪 Testes
+O projeto conta com testes automatizados para garantir a integridade das regras de negócio e o correto funcionamento das operações principais.
 
+Para executar os testes, utilize o comando:
 ```bash
 php artisan test
 ```
