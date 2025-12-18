@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\DTO\AssuntoDTO;
 use Illuminate\Http\Request;
 use App\Services\Assuntos as AssuntoService;
 
@@ -44,12 +45,11 @@ class AssuntosController extends Controller
         }
         if ($request->isMethod('post')) {
             try {
-                $request->validate([
-                    'descricao' => 'required|string|max:20',
-                ]);
-                $this->serviceAssunto->save($request->all());
-
+                $assuntoDTO = AssuntoDTO::fromRequest($request);
+                $this->serviceAssunto->save($assuntoDTO);
                 return redirect()->route('assuntos')->with('success', 'Assunto salvo com sucesso!');
+            } catch (\Illuminate\Validation\ValidationException $e) {
+                return redirect()->back()->withErrors($e->errors())->withInput();
             } catch (\Exception $e) {
                 return redirect()->back()->with('error', "Não foi possível salvar o assunto: {$e->getMessage()}");
             }

@@ -2,8 +2,10 @@
 
 namespace App\Services;
 
+use App\DTO\AssuntoDTO;
 use App\Models\Assunto as ModelAssuntos;
 use Exception;
+use Illuminate\Support\Facades\DB;
 
 class Assuntos
 {
@@ -34,16 +36,26 @@ class Assuntos
 
     /**
      * Método responsável por salvar um assunto 
-     * @param array $dadosAssunto Dados do assunto que serão salvos
+     * @param AssuntoDTO $assuntoDTO Dados do assunto que serão salvos
      */
-    public function save(array $dadosAssunto)
+    public function save(AssuntoDTO $assuntoDTO)
     {
-        if (!empty($dadosAssunto['codAs'])) {
-            $assunto = $this->getById($dadosAssunto['codAs']);
-            return $assunto->update($dadosAssunto);
-        }
+        DB::beginTransaction();
+        try {
+            if (!empty($assuntoDTO->codAs)) {
+                $assunto = $this->getById($assuntoDTO->codAs);
+                $assunto->update($assuntoDTO->toArray());
+                DB::commit();
+                return $assunto;
+            }
 
-        return ModelAssuntos::create($dadosAssunto);
+            $assunto = ModelAssuntos::create($assuntoDTO->toArray());
+            DB::commit();
+            return $assunto;
+        } catch (Exception $e) {
+            DB::rollBack();
+            throw $e;
+        }
     }
 
     /**
@@ -52,10 +64,17 @@ class Assuntos
      */
     public function delete(int $codAs)
     {
-        $assunto = $this->getById($codAs);
-        if ($assunto->livros()->exists()) {
-            throw new Exception('O assunto esta vinculado a um ou mais livros.');
+        DB::beginTransaction();
+        try {
+            $assunto = $this->getById($codAs);
+            if ($assunto->livros()->exists()) {
+                throw new Exception('O assunto esta vinculado a um ou mais livros.');
+            }
+            $assunto->delete();
+            DB::commit();
+        } catch (Exception $e) {
+            DB::rollBack();
+            throw $e;
         }
-        return $assunto->delete();
     }
 }

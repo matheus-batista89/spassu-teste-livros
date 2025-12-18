@@ -2,11 +2,13 @@
 
 namespace App\Services;
 
+use App\DTO\LivroDTO;
 use App\Models\Livro as ModelLivro;
 use App\Models\LivroAssunto as ModelLivroAssunto;
 use App\Models\LivroAutor as ModelLivroAutor;
 use Exception;
 use App\Models\ViewLivrosResumo;
+use Illuminate\Support\Facades\DB;
 
 
 class Livros
@@ -45,53 +47,67 @@ class Livros
 
     /**
      * Método responsável por salvar um livro 
-     * @param array $dadosLivro Dados do livro que serão salvos
+     * @param LivroDTO $livroDTO Dados do livro que serão salvos
      */
-    public function save(array $dadosLivro)
+    public function save(LivroDTO $livroDTO)
     {
-        if (empty($dadosLivro)) {
-            throw new Exception('Os dados para salvar um livro não forão encontrados');
-        }
-        $dadosLivro['valor'] = (float)str_replace(['.', ','], ['', '.'], $dadosLivro['valor']);
-        if (!empty($dadosLivro['codL'])) {
-            return $this->updateLivro($dadosLivro);
-        }
-        $livro = ModelLivro::create([
-            'titulo' => $dadosLivro['titulo'],
-            'editora' => $dadosLivro['editora'],
-            'edicao' => $dadosLivro['edicao'],
-            'anoPublicacao' => $dadosLivro['anoPublicacao'],
-            'valor' => $dadosLivro['valor']
-        ]);
-        foreach ($dadosLivro['autores'] as $key => $autor) {
-            $this->salvaLivroAutor(['codL' => $livro->codL, 'autor_codAu' => $autor]);
-        }
-        // salva todos os assuntos vinculados ao livro
-        foreach ($dadosLivro['assuntos'] as $assuntoCodAs) {
-            $this->salvaLivroAssunto(['codL' => $livro->codL, 'assunto_codAs' => $assuntoCodAs]);
-        }
+        DB::beginTransaction();
+        try {
+            if (!empty($livroDTO->codL)) {
+                $livro = $this->updateLivro($livroDTO);
+                DB::commit();
+                return $livro;
+            }
 
-        return $livro;
+            $livro = ModelLivro::create([
+                'titulo' => $livroDTO->titulo,
+                'editora' => $livroDTO->editora,
+                'edicao' => $livroDTO->edicao,
+                'anoPublicacao' => $livroDTO->anoPublicacao,
+                'valor' => $livroDTO->valor
+            ]);
+
+            foreach ($livroDTO->autores as $autor) {
+                $this->salvaLivroAutor(['codL' => $livro->codL, 'autor_codAu' => $autor]);
+            }
+
+            // salva todos os assuntos vinculados ao livro
+            foreach ($livroDTO->assuntos as $assuntoCodAs) {
+                $this->salvaLivroAssunto(['codL' => $livro->codL, 'assunto_codAs' => $assuntoCodAs]);
+            }
+
+            DB::commit();
+            return $livro;
+        } catch (Exception $e) {
+            DB::rollBack();
+            throw $e;
+        }
     }
 
     /**
      * Método responsável por fazer a atualização de um livro 
-     * @param array $dadosLivro Dados do livro que serão salvos
+     * @param LivroDTO $livroDTO Dados do livro que serão salvos
      */
-    public function updateLivro(array $dadosLivro)
+    private function updateLivro(LivroDTO $livroDTO)
     {
-        $livro = $this->getById($dadosLivro['codL']);
-        $livro->update($dadosLivro);
+        $livro = $this->getById($livroDTO->codL);
+        $livro->update([
+            'titulo' => $livroDTO->titulo,
+            'editora' => $livroDTO->editora,
+            'edicao' => $livroDTO->edicao,
+            'anoPublicacao' => $livroDTO->anoPublicacao,
+            'valor' => $livroDTO->valor
+        ]);
 
         // Atualiza autores
         $this->deleteLivroAutor($livro->codL);
-        foreach ($dadosLivro['autores'] as $autor) {
+        foreach ($livroDTO->autores as $autor) {
             $this->salvaLivroAutor(['codL' => $livro->codL, 'autor_codAu' => $autor]);
         }
 
         // Atualiza assuntos (muitos-para-muitos)
         $this->deleteLivroAssunto($livro->codL);
-        foreach ($dadosLivro['assuntos'] as $assuntoCodAs) {
+        foreach ($livroDTO->assuntos as $assuntoCodAs) {
             $this->salvaLivroAssunto(['codL' => $livro->codL, 'assunto_codAs' => $assuntoCodAs]);
         }
 
@@ -117,13 +133,12 @@ class Livros
     }
 
     /**
-     * Método responsável por deletar um registro da tabela livro_autor
+     * Método responsável por deletar registros da tabela livro_autor
      * @param int $codL Identificador do livro
      */
     public function deleteLivroAutor(int $codL)
     {
-        $livroAutor = $this->getLivroAutorByLivro($codL);
-        $livroAutor->delete();
+        ModelLivroAutor::where('livro_codL', $codL)->delete();
     }
 
     /**
@@ -159,10 +174,17 @@ class Livros
      */
     public function deleteLivro(int $codL)
     {
-        $livro = $this->getById($codL);
-        $this->deleteLivroAssunto($livro->codL);
-        $this->deleteLivroAutor($livro->codL);
-        $livro->delete();
+        DB::beginTransaction();
+        try {
+            $livro = $this->getById($codL);
+            $this->deleteLivroAssunto($livro->codL);
+            $this->deleteLivroAutor($livro->codL);
+            $livro->delete();
+            DB::commit();
+        } catch (Exception $e) {
+            DB::rollBack();
+            throw $e;
+        }
     }
 
     public function getDadosLivrosRelatorioGeral()

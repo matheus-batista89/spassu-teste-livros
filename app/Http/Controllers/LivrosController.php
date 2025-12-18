@@ -2,11 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\DTO\LivroDTO;
 use Illuminate\Http\Request;
 use App\Services\Livros as ServiceLivros;
 use App\Services\Autores as ServiceAutores;
 use App\Services\Assuntos as ServiceAssuntos;
-use Illuminate\Support\Facades\DB;
 
 class LivrosController extends Controller
 {
@@ -54,23 +54,13 @@ class LivrosController extends Controller
             }
         }
         if ($request->isMethod('post')) {
-            DB::beginTransaction();
             try {
-                $request->validate([
-                    'titulo' => 'required|string|max:40',
-                    'editora' => 'required|string|max:40',
-                    'edicao' => 'required|integer',
-                    'anoPublicacao' => 'required|integer|between:0, ' . date('Y'),
-                    'autores' => 'required|array',
-                    'assuntos' => 'required|array',
-                    'assuntos.*' => 'integer',
-                    'valor' => 'required|string|max:13'
-                ]);
-                $this->serviceLivros->save($request->all());
-                DB::commit();
+                $livroDTO = LivroDTO::fromRequest($request);
+                $this->serviceLivros->save($livroDTO);
                 return redirect()->route('livros')->with('success', 'Livro salvo com sucesso!');
+            } catch (\Illuminate\Validation\ValidationException $e) {
+                return redirect()->back()->withErrors($e->errors())->withInput();
             } catch (\Exception $e) {
-                DB::rollBack();
                 return redirect()->back()->with('error', "Não foi possível salvar o livro: {$e->getMessage()}");
             }
         }
@@ -86,14 +76,11 @@ class LivrosController extends Controller
      */
     public function deletar(Request $request)
     {
-        $codAs = $request->query('codL');
-        DB::beginTransaction();
+        $codL = $request->query('codL');
         try {
-            $this->serviceLivros->deleteLivro($codAs);
-            DB::commit();
+            $this->serviceLivros->deleteLivro($codL);
             return redirect()->route('livros')->with('success', 'Livro excluído com sucesso!');
         } catch (\Exception $e) {
-            DB::rollBack();
             return redirect()->back()->with('error', "Não foi possível excluir o livro: {$e->getMessage()}");
         }
     }

@@ -2,8 +2,10 @@
 
 namespace App\Services;
 
+use App\DTO\AutorDTO;
 use App\Models\Autor as ModelAutor;
 use Exception;
+use Illuminate\Support\Facades\DB;
 
 class Autores
 {
@@ -34,16 +36,26 @@ class Autores
 
     /**
      * Método responsável por salvar um autor 
-     * @param array $dadosAutor Dados do autor que serão salvos
+     * @param AutorDTO $autorDTO Dados do autor que serão salvos
      */
-    public function save(array $dadosAutor)
+    public function save(AutorDTO $autorDTO)
     {
-        if (!empty($dadosAutor['codAu'])) {
-            $autor = $this->getById($dadosAutor['codAu']);
-            return $autor->update($dadosAutor);
-        }
+        DB::beginTransaction();
+        try {
+            if (!empty($autorDTO->codAu)) {
+                $autor = $this->getById($autorDTO->codAu);
+                $autor->update($autorDTO->toArray());
+                DB::commit();
+                return $autor;
+            }
 
-        return ModelAutor::create($dadosAutor);
+            $autor = ModelAutor::create($autorDTO->toArray());
+            DB::commit();
+            return $autor;
+        } catch (Exception $e) {
+            DB::rollBack();
+            throw $e;
+        }
     }
 
      /**
@@ -52,10 +64,17 @@ class Autores
      */
     public function delete(int $codAu)
     {
-        $autor = $this->getById($codAu);
-        if ($autor->livros()->exists()) {
-            throw new Exception('O autor esta vinculado a um ou mais livros.');
+        DB::beginTransaction();
+        try {
+            $autor = $this->getById($codAu);
+            if ($autor->livros()->exists()) {
+                throw new Exception('O autor esta vinculado a um ou mais livros.');
+            }
+            $autor->delete();
+            DB::commit();
+        } catch (Exception $e) {
+            DB::rollBack();
+            throw $e;
         }
-        return $autor->delete();
     }
 }

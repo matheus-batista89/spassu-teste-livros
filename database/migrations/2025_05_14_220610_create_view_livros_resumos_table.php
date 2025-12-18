@@ -13,24 +13,6 @@ return new class extends Migration
 
         $driver = DB::getDriverName();
 
-        if ($driver == 'pgsql') {
-            DB::statement("
-            CREATE VIEW view_livros_resumo AS
-                SELECT 
-                    autor.codAu,
-                    autor.nome AS autor_nome,
-                    COUNT(DISTINCT livro.codL) AS total_livros,
-                    SUM(livro.valor) AS soma_valores,
-                    STRING_AGG(DISTINCT livro.titulo, ', ') AS titulos,
-                    STRING_AGG(DISTINCT assunto.descricao, ', ') AS assuntos
-                FROM livro
-                JOIN livro_autor ON livro.codL = livro_autor.livro_codL
-                JOIN autor ON autor.codAu = livro_autor.autor_codAu
-                LEFT JOIN livro_assunto ON livro.codL = livro_assunto.livro_codL
-                LEFT JOIN assunto ON assunto.codAs = livro_assunto.assunto_codAs
-                GROUP BY autor.codAu, autor.nome;
-        ");
-        } else {
             DB::statement("
                 CREATE VIEW view_livros_resumo AS
                 SELECT 
@@ -57,7 +39,6 @@ return new class extends Migration
                 JOIN livro l ON l.codL = la.livro_codL
                 GROUP BY a.codAu, a.nome;
             ");
-        }
     }
 
     /**

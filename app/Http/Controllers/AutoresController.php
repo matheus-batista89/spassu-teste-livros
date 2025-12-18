@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\DTO\AutorDTO;
 use Illuminate\Http\Request;
 use App\Services\Autores as ServiceAutores;
 
@@ -45,12 +46,11 @@ class AutoresController extends Controller
         }
         if ($request->isMethod('post')) {
             try {
-                $request->validate([
-                    'nome' => 'required|string|max:40',
-                ]);
-                $this->serviceAutores->save($request->all());
-
+                $autorDTO = AutorDTO::fromRequest($request);
+                $this->serviceAutores->save($autorDTO);
                 return redirect()->route('autores')->with('success', 'Autor salvo com sucesso!');
+            } catch (\Illuminate\Validation\ValidationException $e) {
+                return redirect()->back()->withErrors($e->errors())->withInput();
             } catch (\Exception $e) {
                 return redirect()->back()->with('error', "Não foi possível salvar o autor: {$e->getMessage()}");
             }
