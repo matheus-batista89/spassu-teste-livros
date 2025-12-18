@@ -40,6 +40,7 @@
                                 <th scope="col">Autor</th>
                                 <th scope="col">Quantidade de livros</th>
                                 <th scope="col">Títulos</th>
+                                <th scope="col">Assuntos</th>
                                 <th scope="col">Valor dos livros</th>
                             </tr>
                         </thead>
@@ -48,7 +49,8 @@
                                 <tr>
                                     <td>{{ $livro['autor_nome'] }}</td>
                                     <td>{{ $livro['total_livros'] }}</td>
-                                    <td class="central">{{ $livro['titulos'] }}</td>
+                                    <td class="central">{{ $livro['titulos'] ?? '-' }}</td>
+                                    <td class="central">{{ $livro['assuntos'] ?? '-' }}</td>
                                     <td class="central">R$ {{ number_format($livro['soma_valores'], 2, ',', '.') }}</td>
                                 </tr>
                             @endforeach

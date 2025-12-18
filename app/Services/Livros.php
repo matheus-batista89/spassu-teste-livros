@@ -168,20 +168,5 @@ class Livros
     public function getDadosLivrosRelatorioGeral()
     {
         return ViewLivrosResumo::all()->toArray();
-        $auxLivros = ViewLivrosResumo::all();
-        $livros = $auxLivros->groupBy('codL')->map(function ($livroGrupo) {
-            $first = $livroGrupo->first();
-            return [
-                'titulo' => $first->titulo,
-                'editora' => $first->editora,
-                'edicao' => $first->edicao,
-                'valor' => number_format((float)$first->valor, 2, ',', '.'),
-                'ano_publicacao' => $first->anoPublicacao,
-                'autores' => $livroGrupo->pluck('nome')->unique()->implode('; '),
-                'assunto' => $first->descricao,
-            ];
-        });
-
-        return $livros;
     }
 }
