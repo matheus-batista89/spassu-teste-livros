@@ -66,10 +66,15 @@ class AssuntosControllerTest extends TestCase
     {
         $dados = ['descricao' => 'Novo Assunto'];
 
+        $assuntoMock = Mockery::mock();
+        $assuntoMock->codAs = 1;
+        $assuntoMock->descricao = 'Novo Assunto';
+
         $this->assuntoServiceMock
             ->shouldReceive('save')
             ->once()
-            ->with($dados);
+            ->with(Mockery::type(\App\DTO\AssuntoDTO::class))
+            ->andReturn($assuntoMock);
 
         $response = $this->post(route('novoassunto'), $dados);
 

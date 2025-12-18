@@ -5,6 +5,7 @@ namespace Tests\Unit\Services;
 use Tests\TestCase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use App\Services\Livros as ServiceLivros;
+use App\DTO\LivroDTO;
 use App\Models\Livro;
 use App\Models\Autor;
 use App\Models\Assunto;
@@ -38,17 +39,18 @@ class LivrosServiceTest extends TestCase
         $assunto1 = Assunto::factory()->create();
         $assunto2 = Assunto::factory()->create();
         
-        $dados = [
-            'titulo' => 'Livro Teste',
-            'editora' => 'Editora X',
-            'edicao' => '1',
-            'anoPublicacao' => '2023',
-            'valor' => '123,45',
-            'autores' => [$autor1->codAu, $autor2->codAu],
-            'assuntos' => [$assunto1->codAs, $assunto2->codAs],
-        ];
+        $livroDTO = new LivroDTO(
+            codL: null,
+            titulo: 'Livro Teste',
+            editora: 'Editora X',
+            edicao: 1,
+            anoPublicacao: '2023',
+            valor: 123.45,
+            autores: [$autor1->codAu, $autor2->codAu],
+            assuntos: [$assunto1->codAs, $assunto2->codAs]
+        );
 
-        $livro = $this->livrosService->save($dados);
+        $livro = $this->livrosService->save($livroDTO);
 
         $this->assertDatabaseHas('livro', [
             'codL' => $livro->codL,
@@ -107,19 +109,18 @@ class LivrosServiceTest extends TestCase
             ['livro_codL' => $livro->codL, 'assunto_codAs' => $assunto->codAs],
         ]);
 
+        $livroDTO = new LivroDTO(
+            codL: $livro->codL,
+            titulo: 'Atualizado',
+            editora: 'Nova Editora',
+            edicao: 2,
+            anoPublicacao: '2024',
+            valor: 200.00,
+            autores: [$autor->codAu],
+            assuntos: [$assunto->codAs]
+        );
 
-        $dadosAtualizados = [
-            'codL' => $livro->codL,
-            'titulo' => 'Atualizado',
-            'editora' => 'Nova Editora',
-            'edicao' => '2',
-            'anoPublicacao' => '2024',
-            'valor' => '200.00',
-            'autores' => [$autor->codAu],
-            'assuntos' => [$assunto->codAs],
-        ];
-
-        $livroAtualizado = $this->livrosService->updateLivro($dadosAtualizados);
+        $livroAtualizado = $this->livrosService->save($livroDTO);
 
         $this->assertEquals('Atualizado', $livroAtualizado->titulo);
         $this->assertEquals(200.00, $livroAtualizado->valor);

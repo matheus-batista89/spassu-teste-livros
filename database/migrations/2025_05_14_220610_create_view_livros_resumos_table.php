@@ -13,6 +13,59 @@ return new class extends Migration
 
         $driver = DB::getDriverName();
 
+        if ($driver == 'pgsql') {
+            DB::statement("
+            CREATE VIEW view_livros_resumo AS
+                SELECT 
+                    autor.codAu,
+                    autor.nome AS autor_nome,
+                    COUNT(DISTINCT livro.codL) AS total_livros,
+                    SUM(livro.valor) AS soma_valores,
+                    STRING_AGG(DISTINCT livro.titulo, ', ') AS titulos,
+                    STRING_AGG(DISTINCT assunto.descricao, ', ') AS assuntos
+                FROM livro
+                JOIN livro_autor ON livro.codL = livro_autor.livro_codL
+                JOIN autor ON autor.codAu = livro_autor.autor_codAu
+                LEFT JOIN livro_assunto ON livro.codL = livro_assunto.livro_codL
+                LEFT JOIN assunto ON assunto.codAs = livro_assunto.assunto_codAs
+                GROUP BY autor.codAu, autor.nome;
+        ");
+        } elseif ($driver == 'sqlite') {
+            // SQLite não suporta DISTINCT no GROUP_CONCAT, então usamos subquery com DISTINCT
+            DB::statement("
+                CREATE VIEW view_livros_resumo AS
+                SELECT 
+                    a.codAu,
+                    a.nome AS autor_nome,
+                    COUNT(DISTINCT l.codL) AS total_livros,
+                    SUM(l.valor) AS soma_valores,
+                    (
+                        SELECT GROUP_CONCAT(l2.titulo, ', ')
+                        FROM (
+                            SELECT DISTINCT l2.titulo
+                            FROM livro l2
+                            JOIN livro_autor la2 ON la2.livro_codL = l2.codL
+                            WHERE la2.autor_codAu = a.codAu AND l2.titulo != ''
+                        ) l2
+                    ) AS titulos,
+                    (
+                        SELECT GROUP_CONCAT(as2.descricao, ', ')
+                        FROM (
+                            SELECT DISTINCT as2.descricao
+                            FROM livro l2
+                            JOIN livro_autor la2 ON la2.livro_codL = l2.codL
+                            LEFT JOIN livro_assunto las2 ON las2.livro_codL = l2.codL
+                            LEFT JOIN assunto as2 ON as2.codAs = las2.assunto_codAs
+                            WHERE la2.autor_codAu = a.codAu AND as2.descricao IS NOT NULL
+                        ) as2
+                    ) AS assuntos
+                FROM autor a
+                JOIN livro_autor la ON la.autor_codAu = a.codAu
+                JOIN livro l ON l.codL = la.livro_codL
+                GROUP BY a.codAu, a.nome;
+            ");
+        } else {
+            // MySQL
             DB::statement("
                 CREATE VIEW view_livros_resumo AS
                 SELECT 
@@ -39,6 +92,7 @@ return new class extends Migration
                 JOIN livro l ON l.codL = la.livro_codL
                 GROUP BY a.codAu, a.nome;
             ");
+        }
     }
 
     /**
